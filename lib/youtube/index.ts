@@ -1,16 +1,4 @@
-import axios, { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import { InfrastructureDynamoDB, DDBRecord } from '../../lib/aws-infra';
-import { appConfig } from '../../config/index';
-
-type VideoThumbnails = {
-    default?: string;
-    medium?: string;
-    high?: string;
-    standard?: string;
-    maxres?: string;
-};
-
-type VideoThumbnailKeys = keyof VideoThumbnails;
 
 export class Video {
     readonly id: string;
@@ -41,4 +29,40 @@ export class Video {
         if (DDBRecords.length === 0) return;
         return new Video(DDBRecords);
     }
+
+    public static async isExistVideoId(videoId: string): Promise<boolean> {
+        const getItem = await InfrastructureDynamoDB.getItemByTable(videoId, 'VideoCollectionMetaData');
+        return getItem !== undefined;
+    }
 }
+
+export class Tag {
+    readonly videoId: string;
+    readonly key: string;
+    readonly value: string;
+
+    constructor(tagSource: TagSource) {
+        this.videoId = tagSource.videoId;
+        this.key = tagSource.key;
+        this.value = tagSource.value;
+    }
+
+    getRecordString(): string {
+        return `Tag:${this.key}:${this.value}`;
+    }
+
+    public async put(): Promise<undefined> {
+        await InfrastructureDynamoDB.putItem({
+            id: `YT_V_${this.videoId}`,
+            dataType: this.getRecordString(),
+            dataValue: this.getRecordString(),
+        });
+        return;
+    }
+}
+
+export type TagSource = {
+    videoId: string;
+    key: string;
+    value: string;
+};

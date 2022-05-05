@@ -47,6 +47,26 @@ Resources:
             RestApiId:
               Ref: APIGateway
       Policies:
+        - DynamoDBReadPolicy:
+            TableName: vgetDataTable
+  PostVideoTagsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/postVideoTags
+      FunctionName: !Join [ "-", [ vget-api-video-tag, !FindInMap [ EnvMap, !Ref environment, StageEnv ]]]
+      Handler: index.lambdaHandler
+      Environment:
+        Variables:
+          RUN_ENV: !FindInMap [ EnvMap, !Ref environment, StageEnv ]
+      Events:
+        GetStage:
+          Type: Api
+          Properties:
+            Path: /video/tags
+            Method: post
+            RestApiId:
+              Ref: APIGateway
+      Policies:
         - DynamoDBCrudPolicy:
             TableName: vgetDataTable
 

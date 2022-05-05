@@ -8,9 +8,10 @@
     "lint:fix": "eslint --fix './func/**/*.ts' './lib/**/*.ts' './config/**/*.ts'",
     "format": "prettier --check './func/**/*.ts' './lib/**/*.ts' './config/**/*.ts'",
     "format:fix": "prettier --write './func/**/*.ts' './lib/**/*.ts' './config/**/*.ts'",
-    "dev": "ts-node func/getVideos/index.ts",
-    "dev:watch": "ts-node-dev --respawn func/getVideos/index.ts",
-    "deploy": "webpack && sam build && sam deploy"
+    "dev": "ts-node func/postVideoTags/index.ts",
+    "dev:watch": "ts-node-dev --respawn func/postVideoTags/index.ts",
+    "prebuild": "webpack",
+    "build": "sam build"
   },
   "author": "",
   "license": "ISC",
