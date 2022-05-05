@@ -108,6 +108,8 @@ const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPro
     const errorHandler = validateReqParams(requestParams);
 
     const response = errorHandler === undefined ? getVideos(requestParams) : makeErrorResponse(errorHandler);
+    console.log(`statusCode: ${response.statusCode}`);
+    console.log(`responseBody: ${JSON.stringify(JSON.parse(response.body), null, 2)}`);
     return response;
 };
 
@@ -122,6 +124,5 @@ if (isRunOnLocal()) {
             },
         } as unknown as APIGatewayProxyEvent;
         const res = await lambdaHandler(event);
-        console.log(JSON.stringify(JSON.parse(res.body), null, 2));
     })();
 }
