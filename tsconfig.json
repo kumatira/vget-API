@@ -1,0 +1,15 @@
+{
+    // https://typescriptbook.jp/reference/tsconfig/tsconfig.json-settings#2020年版スクラッチから作るなら
+    "compilerOptions": {
+      "target": "es2020", // コンパイルするJSのバージョン
+      "module": "commonjs", //モジュールを読み込み方
+      "sourceMap": true, //ソースマップを吐き出す。デバッガーが元のTypeScriptソースファイルを表示できるように
+      "outDir": "./dist", //出力先を指定
+      "moduleResolution": "node", //モジュール解決方法の指定
+      "preserveConstEnums": true, //コード生成時にconst enumの定義を取り除かないようにする
+      "esModuleInterop": true, //すべてのインポートに対して Namespace オブジェクトを生成することによって、CommonJS と ES Modules 間で相互運用可能なコードを出力
+      "forceConsistentCasingInFileNames": true, //インクルード時に大文字小文字を区別
+      "strict": true, //strict系のコンパイラオプションを一括で有効化
+      "skipLibCheck": true //*.d.tsに対する型チェックをスキップしてコンパイル時間を短縮
+    },
+}

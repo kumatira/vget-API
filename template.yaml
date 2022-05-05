@@ -1,0 +1,52 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: vget-API
+Globals:
+  Function:
+    Timeout: 30
+    Runtime: nodejs14.x
+
+Resources:
+  APIGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Join [ "-", [ vget-api, !FindInMap [ EnvMap, !Ref environment, StageEnv ]]]
+      StageName: v1
+  GetEnvFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/getEnv
+      FunctionName: !Join [ "-", [ vget-api-env, !FindInMap [ EnvMap, !Ref environment, StageEnv ]]]
+      Handler: index.lambdaHandler
+      Environment:
+        Variables:
+          RUN_ENV: !FindInMap [ EnvMap, !Ref environment, StageEnv ]
+      Events:
+        GetStage:
+          Type: Api
+          Properties:
+            Path: /env
+            Method: get
+            RestApiId:
+              Ref: APIGateway
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: vgetDataTable
+
+Parameters:
+  environment:
+    Type: String
+    AllowedValues:
+      - prod
+      - stg
+      - dev
+    Default: dev
+
+Mappings:
+  EnvMap:
+    prod:
+      StageEnv: 'production'
+    stg:
+      StageEnv: 'staging'
+    dev:
+      StageEnv: 'development'
