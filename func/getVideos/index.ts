@@ -1,5 +1,4 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { InfrastructureDynamoDB } from '../../lib/aws-infra';
 import { Video } from '../../lib/youtube';
 import { isRunOnLocal } from '../../lib/util';
 
