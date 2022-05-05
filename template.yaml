@@ -29,6 +29,23 @@ Resources:
             Method: get
             RestApiId:
               Ref: APIGateway
+  GetVideosFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/getVideos
+      FunctionName: !Join [ "-", [ vget-api-videos, !FindInMap [ EnvMap, !Ref environment, StageEnv ]]]
+      Handler: index.lambdaHandler
+      Environment:
+        Variables:
+          RUN_ENV: !FindInMap [ EnvMap, !Ref environment, StageEnv ]
+      Events:
+        GetStage:
+          Type: Api
+          Properties:
+            Path: /videos
+            Method: get
+            RestApiId:
+              Ref: APIGateway
       Policies:
         - DynamoDBCrudPolicy:
             TableName: vgetDataTable

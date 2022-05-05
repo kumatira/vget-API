@@ -8,14 +8,16 @@
     "lint:fix": "eslint --fix './func/**/*.ts' './lib/**/*.ts' './config/**/*.ts'",
     "format": "prettier --check './func/**/*.ts' './lib/**/*.ts' './config/**/*.ts'",
     "format:fix": "prettier --write './func/**/*.ts' './lib/**/*.ts' './config/**/*.ts'",
-    "dev": "ts-node func/getEnv/index.ts",
-    "dev:watch": "ts-node-dev --respawn func/getEnv/index.ts"
+    "dev": "ts-node func/getVideos/index.ts",
+    "dev:watch": "ts-node-dev --respawn func/getVideos/index.ts",
+    "deploy": "webpack && sam build && sam deploy"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.81.0",
     "@aws-sdk/credential-provider-ini": "^3.72.0",
+    "@aws-sdk/lib-dynamodb": "^3.82.0",
     "axios": "^0.26.1"
   },
   "devDependencies": {

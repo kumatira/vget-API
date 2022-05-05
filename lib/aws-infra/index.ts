@@ -1,45 +1,56 @@
-import { DynamoDBClient, BatchWriteItemCommand, WriteRequest, GetItemCommand } from '@aws-sdk/client-dynamodb';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { fromIni } from '@aws-sdk/credential-provider-ini';
 import { appConfig } from '../../config/index';
 import { isRunOnLocal } from '../util';
 
+export type DDBRecord = {
+    id: string;
+    dataType: string;
+    dataValue?: string;
+    collection?: {
+        operationType: string;
+        at: string;
+        by: string;
+    }[];
+};
+
 export class InfrastructureDynamoDB {
-    private static batchThreshold = 25;
-    private static makeDDBClient = (): DynamoDBClient => {
+    private static makeDDBClient = (): DynamoDBDocumentClient => {
         if (isRunOnLocal()) {
-            return new DynamoDBClient({
-                region: 'ap-northeast-1',
-                credentials: fromIni({ profile: appConfig.awsProfile }),
-            });
+            return DynamoDBDocumentClient.from(
+                new DynamoDBClient({
+                    region: 'ap-northeast-1',
+                    credentials: fromIni({ profile: appConfig.awsProfile }),
+                })
+            );
         } else {
-            return new DynamoDBClient({
-                region: 'ap-northeast-1',
-            });
+            return DynamoDBDocumentClient.from(
+                new DynamoDBClient({
+                    region: 'ap-northeast-1',
+                })
+            );
         }
     };
 
-    public static async checkVideoIdIsExistAtDDB(videoId: string): Promise<boolean> {
+    public static async getVideoByVideoId(videoId: string): Promise<DDBRecord[] | undefined> {
         const dDBClient = this.makeDDBClient();
         try {
             const tableName = appConfig.dataTableName;
             const result = await dDBClient.send(
-                new GetItemCommand({
+                new QueryCommand({
                     TableName: tableName,
-                    Key: {
-                        id: { S: `YT_V_${videoId}` },
-                        dataType: { S: 'VideoCollectionMetaData' },
+                    KeyConditionExpression: 'id = :id',
+                    ExpressionAttributeValues: {
+                        ':id': `YT_V_${videoId}`,
                     },
                 })
             );
-            if (result.Item !== undefined) {
-                //項目が存在しない場合はItemがundefinedで返ってくる
-                return true;
-            } else {
-                return false;
-            }
+            const queriedRecords = result.Items as DDBRecord[];
+            return queriedRecords;
         } catch (e: any) {
             console.log(e);
-            return false;
+            return;
         }
     }
 }
