@@ -1,6 +1,7 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { fromIni } from '@aws-sdk/credential-provider-ini';
+import { Tag } from '../../lib/youtube';
 import { appConfig } from '../../config/index';
 import { isRunOnLocal } from '../util';
 
@@ -13,17 +14,7 @@ export type DDBRecord = {
         at: string;
         by: string;
     };
-};
-
-export type PutData = {
-    id: string;
-    dataType: string;
-    dataValue?: string;
-    collection?: {
-        operationType: string;
-        at: string;
-        by: string;
-    };
+    tags?: Tag[];
 };
 
 export class InfrastructureDynamoDB {
@@ -44,7 +35,7 @@ export class InfrastructureDynamoDB {
         }
     };
 
-    public static async putItem(putData: PutData): Promise<undefined> {
+    public static async putItem(putData: DDBRecord): Promise<undefined> {
         const dDBClient = this.makeDDBClient();
         try {
             const tableName = appConfig.dataTableName;

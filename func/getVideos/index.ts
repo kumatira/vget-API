@@ -90,6 +90,9 @@ const getVideos = async (requestParams: any): Promise<APIGatewayProxyResult> => 
     if (video.actualEndTime !== undefined) {
         responseVideoObj.actualEndTime = video.actualEndTime;
     }
+    if (video.tags !== undefined) {
+        responseVideoObj.tags = video.tags;
+    }
 
     const okResponse: APIGatewayProxyResult = {
         statusCode: 200,
@@ -105,9 +108,11 @@ const getVideos = async (requestParams: any): Promise<APIGatewayProxyResult> => 
 
 const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     const requestParams = event.queryStringParameters;
+    console.log(`requestBody: ${JSON.stringify(requestParams, null, 2)}`);
     const errorHandler = validateReqParams(requestParams);
 
-    const response = errorHandler === undefined ? getVideos(requestParams) : makeErrorResponse(errorHandler);
+    const response = errorHandler === undefined ? await getVideos(requestParams) : makeErrorResponse(errorHandler);
+
     console.log(`statusCode: ${response.statusCode}`);
     console.log(`responseBody: ${JSON.stringify(JSON.parse(response.body), null, 2)}`);
     return response;

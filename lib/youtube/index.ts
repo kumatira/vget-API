@@ -8,6 +8,7 @@ export class Video {
     readonly actualStartTime?: string;
     readonly actualEndTime?: string;
     readonly scheduledStartTime?: string;
+    readonly tags?: Tag[];
     readonly Actors?: string[];
     readonly mainActor?: string;
 
@@ -22,6 +23,10 @@ export class Video {
             this.actualEndTime = DDBRecords.find((r) => r.dataType === 'ActualEndTime')?.dataValue;
         if (DDBRecords.find((r) => r.dataType === 'ScheduledStartTime') !== undefined)
             this.scheduledStartTime = DDBRecords.find((r) => r.dataType === 'ScheduledStartTime')?.dataValue;
+        if (DDBRecords.some((r) => r.dataType.startsWith('Tag:'))) {
+            const targetRecords = DDBRecords.filter((r) => r.dataType.startsWith('Tag:'));
+            this.tags = targetRecords.map((r) => new Tag({ videoId: this.id, recordString: r.dataType }));
+        }
     }
     public static async init(videoId: string): Promise<Video | undefined> {
         const DDBRecords: DDBRecord[] | undefined = await InfrastructureDynamoDB.getVideoByVideoId(videoId);
@@ -41,10 +46,17 @@ export class Tag {
     readonly key: string;
     readonly value: string;
 
-    constructor(tagSource: TagSource) {
-        this.videoId = tagSource.videoId;
-        this.key = tagSource.key;
-        this.value = tagSource.value;
+    constructor(tagSource: TagSource | { videoId: string; recordString: string }) {
+        if ('recordString' in tagSource) {
+            // e.g. Tag:startTIme:171
+            this.videoId = tagSource.videoId;
+            this.key = tagSource.recordString.split(':')[1];
+            this.value = tagSource.recordString.split(':')[2];
+        } else {
+            this.videoId = tagSource.videoId;
+            this.key = tagSource.key;
+            this.value = tagSource.value;
+        }
     }
 
     getRecordString(): string {
