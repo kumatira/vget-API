@@ -12,6 +12,12 @@ Resources:
     Properties:
       Name: !Join [ "-", [ vget-api, !FindInMap [ EnvMap, !Ref environment, StageEnv ]]]
       StageName: v1
+      Domain:
+        BasePath: v1
+        DomainName: !FindInMap [ DomainMap, !Ref environment, StageEnv ]
+        CertificateArn: arn:aws:acm:ap-northeast-1:951950134383:certificate/f8e8805c-7860-4c5a-9191-b20280d586b0
+        Route53:
+          HostedZoneId: Z06745043MOGS4YCD03NK
   GetEnvFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -87,3 +93,10 @@ Mappings:
       StageEnv: 'staging'
     dev:
       StageEnv: 'development'
+  DomainMap:
+    prod:
+      StageEnv: 'api.vget.dev'
+    stg:
+      StageEnv: 'api-staging.vget.dev'
+    dev:
+      StageEnv: 'api-development.vget.dev'
