@@ -5,6 +5,9 @@ Globals:
   Function:
     Timeout: 30
     Runtime: nodejs14.x
+    Environment:
+        Variables:
+          RUN_ENV: !FindInMap [ EnvMap, !Ref environment, StageEnv ]
 
 Resources:
   APIGateway:
@@ -24,9 +27,6 @@ Resources:
       CodeUri: dist/getEnv
       FunctionName: !Join [ "-", [ vget-api-env, !FindInMap [ EnvMap, !Ref environment, StageEnv ]]]
       Handler: index.lambdaHandler
-      Environment:
-        Variables:
-          RUN_ENV: !FindInMap [ EnvMap, !Ref environment, StageEnv ]
       Events:
         GetStage:
           Type: Api
@@ -41,9 +41,6 @@ Resources:
       CodeUri: dist/getVideos
       FunctionName: !Join [ "-", [ vget-api-videos, !FindInMap [ EnvMap, !Ref environment, StageEnv ]]]
       Handler: index.lambdaHandler
-      Environment:
-        Variables:
-          RUN_ENV: !FindInMap [ EnvMap, !Ref environment, StageEnv ]
       Events:
         GetStage:
           Type: Api
@@ -78,9 +75,6 @@ Resources:
       CodeUri: dist/postVideoTags
       FunctionName: !Join [ "-", [ vget-api-video-tag, !FindInMap [ EnvMap, !Ref environment, StageEnv ]]]
       Handler: index.lambdaHandler
-      Environment:
-        Variables:
-          RUN_ENV: !FindInMap [ EnvMap, !Ref environment, StageEnv ]
       Events:
         GetStage:
           Type: Api
