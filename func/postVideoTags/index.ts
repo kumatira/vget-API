@@ -1,10 +1,15 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { Video, TagSource, Tag } from '../../lib/youtube';
+import { Video, Tag } from '../../lib/youtube';
 import { isRunOnLocal } from '../../lib/util';
 
 type ErrorHandler = {
     code: string;
     area?: string;
+};
+
+type tagRequestObj = {
+    videoId: string;
+    tag:string
 };
 
 const validateReqParams = (requestBody: any): ErrorHandler | undefined => {
@@ -17,6 +22,13 @@ const validateReqParams = (requestBody: any): ErrorHandler | undefined => {
         return {
             code: 'RequiredBodyParamIsNotProvided',
             area: 'tags',
+        };
+    }
+    if (requestBody.tags.some((tag: tagRequestObj)=> !tag.tag.includes(':'))) {
+        const invalidTags = requestBody.tags.filter((tag: tagRequestObj)=> !tag.tag.includes(':')).map((t:tagRequestObj)=>t.tag).join(',')
+        return {
+            code: 'ProvidedTagsAreInvalid',
+            area: invalidTags,
         };
     }
     return undefined;
@@ -52,6 +64,15 @@ const makeErrorResponse = (errorHandler: ErrorHandler): APIGatewayProxyResult =>
                 }),
             };
             break;
+        case 'ProvidedTagsAreInvalid':
+            response = {
+                statusCode: 404,
+                body: JSON.stringify({
+                    code: errorHandler.code,
+                    message: `Provided tags: [${errorHandler.area}] are invalid.`,
+                }),
+            };
+            break;
         default:
             response = {
                 statusCode: 500,
@@ -65,10 +86,10 @@ const makeErrorResponse = (errorHandler: ErrorHandler): APIGatewayProxyResult =>
     return response;
 };
 
-const postVideoTags = async (requestParams: { tags: TagSource[] }): Promise<APIGatewayProxyResult> => {
-    const isExistList = await Promise.all(requestParams.tags.map((t: TagSource) => Video.isExistVideoId(t.videoId)));
-    const notFoundRequest = requestParams.tags.filter((t: TagSource, i: number) => !isExistList[i]);
-    const notFoundRequestIds = notFoundRequest.map((t: TagSource) => t.videoId);
+const postVideoTags = async (requestParams: { tags: tagRequestObj[] }): Promise<APIGatewayProxyResult> => {
+    const isExistList = await Promise.all(requestParams.tags.map((t) => Video.isExistVideoId(t.videoId)));
+    const notFoundRequest = requestParams.tags.filter((t, i: number) => !isExistList[i]);
+    const notFoundRequestIds = notFoundRequest.map((t) => t.videoId);
     if (notFoundRequestIds.length > 0) {
         return makeErrorResponse({ code: 'ProvidedVideoIdIsNotFound', area: notFoundRequestIds.join(',') });
     }
@@ -108,14 +129,12 @@ if (isRunOnLocal()) {
             body: JSON.stringify({
                 tags: [
                     {
-                        videoId: 'IYN-yKxsbqM',
-                        key: 'startTIme',
-                        value: '171',
+                        videoId: 'YT_V_IYN-yKxsbqM',
+                        tag: 'startTime:171',
                     },
                     {
-                        videoId: '2mDGmBCXTOY',
-                        key: 'startTIme',
-                        value: '171',
+                        videoId: 'YT_V_2mDGmBCXTOY',
+                        tag: 'startTime:171',
                     },
                 ],
             }),
