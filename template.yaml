@@ -55,6 +55,23 @@ Resources:
       Policies:
         - DynamoDBReadPolicy:
             TableName: vgetDataTable
+  GetVideosIdFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/getVideosId
+      FunctionName: !Join [ "-", [ vget-api-videos-id, !FindInMap [ EnvMap, !Ref environment, StageEnv ]]]
+      Handler: index.lambdaHandler
+      Events:
+        GetStage:
+          Type: Api
+          Properties:
+            Path: /videos/{videoId}
+            Method: get
+            RestApiId:
+              Ref: APIGateway
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: vgetDataTable
   PostVideoTagsFunction:
     Type: AWS::Serverless::Function
     Properties:
