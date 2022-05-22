@@ -99,7 +99,7 @@ const getVideos = async (requestParams: any): Promise<APIGatewayProxyResult> => 
         body: JSON.stringify({
             ResultSet: {
                 apiVersion: '0.0.1',
-                Video: responseVideoObj,
+                videos: [responseVideoObj],
             },
         }),
     };
