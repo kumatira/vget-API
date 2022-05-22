@@ -8,8 +8,8 @@
     "lint:fix": "eslint --fix './func/**/*.ts' './lib/**/*.ts' './config/**/*.ts'",
     "format": "prettier --check './func/**/*.ts' './lib/**/*.ts' './config/**/*.ts'",
     "format:fix": "prettier --write './func/**/*.ts' './lib/**/*.ts' './config/**/*.ts'",
-    "dev": "ts-node func/postVideoTags/index.ts",
-    "dev:watch": "ts-node-dev --respawn func/postVideoTags/index.ts",
+    "dev": "ts-node",
+    "dev:watch": "ts-node-dev --respawn",
     "prebuild": "webpack",
     "build": "sam build"
   },
