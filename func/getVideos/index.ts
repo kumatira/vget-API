@@ -125,7 +125,7 @@ if (isRunOnLocal()) {
     (async () => {
         const event = {
             queryStringParameters: {
-                videoId: 'FXCn3sf9LZU',
+                videoId: 'YT_V_IYN-yKxsbqM',
             },
         } as unknown as APIGatewayProxyEvent;
         const res = await lambdaHandler(event);

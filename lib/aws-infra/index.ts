@@ -60,7 +60,7 @@ export class InfrastructureDynamoDB {
                 new GetCommand({
                     TableName: tableName,
                     Key: {
-                        id: `YT_V_${id}`,
+                        id: `${id}`,
                         dataType: dataType,
                     },
                 })
@@ -82,7 +82,7 @@ export class InfrastructureDynamoDB {
                     TableName: tableName,
                     KeyConditionExpression: 'id = :id',
                     ExpressionAttributeValues: {
-                        ':id': `YT_V_${videoId}`,
+                        ':id': `${videoId}`,
                     },
                 })
             );
