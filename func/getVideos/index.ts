@@ -101,7 +101,7 @@ const getVideos = async (requestParams: any): Promise<APIGatewayProxyResult> => 
                 apiVersion: '0.0.1',
                 videos: [responseVideoObj],
             },
-        }),
+        })
     };
     return okResponse;
 };
@@ -112,7 +112,9 @@ const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPro
     const errorHandler = validateReqParams(requestParams);
 
     const response = errorHandler === undefined ? await getVideos(requestParams) : makeErrorResponse(errorHandler);
-
+    response.headers = {
+        "Access-Control-Allow-Origin": "*"
+    }
     console.log(`statusCode: ${response.statusCode}`);
     console.log(`responseBody: ${JSON.stringify(JSON.parse(response.body), null, 2)}`);
     return response;
