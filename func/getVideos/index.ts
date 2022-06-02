@@ -7,6 +7,11 @@ type ErrorHandler = {
     area?: string;
 };
 
+type requestParams = {
+    videoId?: string;
+    channelId?: string;
+}
+
 const validateReqParams = (requestParams: any): ErrorHandler | undefined => {
     if (requestParams === null || requestParams === undefined) {
         return {
@@ -65,41 +70,50 @@ const makeErrorResponse = (errorHandler: ErrorHandler): APIGatewayProxyResult =>
     return response;
 };
 
-const getVideos = async (requestParams: any): Promise<APIGatewayProxyResult> => {
-    const video = await Video.init(requestParams.videoId);
-
+const getVideosByVideoId = async (videoId: string):Promise<Video[]> => {
+    const video = await Video.init(videoId);
     if (video === undefined) {
-        const errorHandler = {
-            code: 'ProvidedVideoIdIsNotFound',
-            area: requestParams.videoId,
-        };
-        return makeErrorResponse(errorHandler);
+        return [];
+    } else {
+        return [video]
+    }
+}
+
+const getVideos = async (requestParams: requestParams): Promise<APIGatewayProxyResult> => {
+    let videos: Video[] = []
+    if (requestParams.videoId !== undefined) {
+        videos = await getVideosByVideoId(requestParams.videoId)
+    } else if (requestParams.channelId !== undefined){
+        
     }
 
-    const responseVideoObj: any = {};
-    responseVideoObj.id = video.id;
-    responseVideoObj.title = video.title;
-    responseVideoObj.publishedAt = video.publishedAt;
-    responseVideoObj.channelID = video.channelId;
-    if (video.scheduledStartTime !== undefined) {
-        responseVideoObj.scheduledStartTime = video.scheduledStartTime;
-    }
-    if (video.actualStartTime !== undefined) {
-        responseVideoObj.actualStartTime = video.actualStartTime;
-    }
-    if (video.actualEndTime !== undefined) {
-        responseVideoObj.actualEndTime = video.actualEndTime;
-    }
-    if (video.tags !== undefined) {
-        responseVideoObj.tags = video.tags;
-    }
+    const resultVideos = videos.map(v=>{
+        const responseVideoObj: any = {};
+        responseVideoObj.id = v.id;
+        responseVideoObj.title = v.title;
+        responseVideoObj.publishedAt = v.publishedAt;
+        responseVideoObj.channelID = v.channelId;
+        if (v.scheduledStartTime !== undefined) {
+            responseVideoObj.scheduledStartTime = v.scheduledStartTime;
+        }
+        if (v.actualStartTime !== undefined) {
+            responseVideoObj.actualStartTime = v.actualStartTime;
+        }
+        if (v.actualEndTime !== undefined) {
+            responseVideoObj.actualEndTime = v.actualEndTime;
+        }
+        if (v.tags !== undefined) {
+            responseVideoObj.tags = v.tags;
+        }
+        return responseVideoObj
+    })
 
     const okResponse: APIGatewayProxyResult = {
         statusCode: 200,
         body: JSON.stringify({
             ResultSet: {
                 apiVersion: '0.0.1',
-                videos: [responseVideoObj],
+                videos: resultVideos,
             },
         })
     };
@@ -110,8 +124,9 @@ const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPro
     const requestParams = event.queryStringParameters;
     console.log(`requestBody: ${JSON.stringify(requestParams, null, 2)}`);
     const errorHandler = validateReqParams(requestParams);
+    const validatedRequestParams = requestParams as requestParams;
 
-    const response = errorHandler === undefined ? await getVideos(requestParams) : makeErrorResponse(errorHandler);
+    const response = errorHandler === undefined ? await getVideos(validatedRequestParams) : makeErrorResponse(errorHandler);
     response.headers = {
         "Access-Control-Allow-Origin": "*"
     }
