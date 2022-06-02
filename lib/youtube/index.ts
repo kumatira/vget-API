@@ -1,5 +1,7 @@
 import { InfrastructureDynamoDB, DDBRecord } from '../../lib/aws-infra';
 
+type videoId = string
+
 export class Video {
     readonly id: string;
     readonly title: string;
@@ -12,8 +14,8 @@ export class Video {
     readonly Actors?: string[];
     readonly mainActor?: string;
 
-    private constructor(DDBRecords: DDBRecord[]) {
-        this.id = DDBRecords.find((r) => r.dataType === 'VideoCollectionMetaData')?.id as string;
+    private constructor(videoId:videoId , DDBRecords: DDBRecord[]) {
+        this.id = videoId;
         this.title = DDBRecords.find((r) => r.dataType === 'VideoTitle')?.dataValue as string;
         this.channelId = DDBRecords.find((r) => r.dataType === 'ChannelID')?.dataValue as string;
         this.publishedAt = DDBRecords.find((r) => r.dataType === 'PublishedAt')?.dataValue as string;
@@ -33,7 +35,7 @@ export class Video {
         const DDBRecords: DDBRecord[] | undefined = await InfrastructureDynamoDB.getVideoByVideoId(videoId);
         if (DDBRecords === undefined) return;
         if (DDBRecords.length === 0) return;
-        return new Video(DDBRecords);
+        return new Video(videoId, DDBRecords);
     }
 
     public static async isExistVideoId(videoId: string): Promise<boolean> {
