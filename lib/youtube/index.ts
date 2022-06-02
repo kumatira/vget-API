@@ -37,7 +37,7 @@ export class Video {
     }
 
     public static async isExistVideoId(videoId: string): Promise<boolean> {
-        const getItem = await InfrastructureDynamoDB.getItemByTable(videoId, 'VideoCollectionMetaData');
+        const getItem = await InfrastructureDynamoDB.getItemByTable(videoId, 'ChannelID');
         return getItem !== undefined;
     }
 }
