@@ -70,7 +70,7 @@ const makeErrorResponse = (errorHandler: ErrorHandler): APIGatewayProxyResult =>
     return response;
 };
 
-const getVideosByVideoId = async (videoId: string):Promise<Video[]> => {
+const getVideoByVideoId = async (videoId: string):Promise<Video[]> => {
     const video = await Video.init(videoId);
     if (video === undefined) {
         return [];
@@ -82,7 +82,7 @@ const getVideosByVideoId = async (videoId: string):Promise<Video[]> => {
 const getVideos = async (requestParams: requestParams): Promise<APIGatewayProxyResult> => {
     let videos: Video[] = []
     if (requestParams.videoId !== undefined) {
-        videos = await getVideosByVideoId(requestParams.videoId)
+        videos = await getVideoByVideoId(requestParams.videoId)
     } else if (requestParams.channelId !== undefined){
         
     }
