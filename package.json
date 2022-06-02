@@ -11,7 +11,8 @@
     "dev": "ts-node",
     "dev:watch": "ts-node-dev --respawn",
     "prebuild": "webpack",
-    "build": "sam build"
+    "build": "sam build --config-env ",
+    "deploy": "sam deploy --config-env"
   },
   "author": "",
   "license": "ISC",

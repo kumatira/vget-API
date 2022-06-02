@@ -1,0 +1,50 @@
+version = 0.1
+[dev.global.parameters]
+profile = "vget-api-deployer"
+region = "ap-northeast-1"
+
+[stg.global.parameters]
+profile = "vget-api-deployer"
+region = "ap-northeast-1"
+
+[prod.global.parameters]
+profile = "vget-api-deployer"
+region = "ap-northeast-1"
+
+
+[dev.build.parameters]
+build_dir = "artifacts/development"
+
+[stg.build.parameters]
+build_dir = "artifacts/staging"
+
+[prod.build.parameters]
+build_dir = "artifacts/production"
+
+
+[dev.deploy.parameters]
+s3_bucket = "aws-sam-cli-managed-vget-api"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+template = "artifacts/development/template.yaml"
+stack_name = "vget-api-development"
+s3_prefix = "development"
+parameter_overrides = "environment=dev"
+
+[stg.deploy.parameters]
+s3_bucket = "aws-sam-cli-managed-vget-api"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+template = "artifacts/staging/template.yaml"
+stack_name = "vget-api-staging"
+s3_prefix = "staging"
+parameter_overrides = "environment=stg"
+
+[prod.deploy.parameters]
+s3_bucket = "aws-sam-cli-managed-vget-api"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+template = "artifacts/production/template.yaml"
+stack_name = "vget-api-production"
+s3_prefix = "production"
+parameter_overrides = "environment=prod"
