@@ -1,6 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { Video } from '../../lib/youtube';
-import { isRunOnLocal } from '../../lib/util';
+import { InfrastructureDynamoDB } from '../../lib/aws-infra';
+import { isRunOnLocal, isBlank } from '../../lib/util';
 
 type ErrorHandler = {
     code: string;
@@ -18,10 +19,10 @@ const validateReqParams = (requestParams: any): ErrorHandler | undefined => {
             code: 'RequiredParamIsNotProvidedAtAll',
         };
     }
-    if (requestParams.videoId === undefined || requestParams.videoId === '') {
+    if (isBlank(requestParams.videoId) && isBlank(requestParams.channelId) ) {
         return {
             code: 'RequiredParamIsNotProvided',
-            area: 'videoId',
+            area: 'videoId or channelId',
         };
     }
     return undefined;
@@ -44,16 +45,7 @@ const makeErrorResponse = (errorHandler: ErrorHandler): APIGatewayProxyResult =>
                 statusCode: 400,
                 body: JSON.stringify({
                     code: errorHandler.code,
-                    message: `Required Parameter: ${errorHandler.area} is not provided.`,
-                }),
-            };
-            break;
-        case 'ProvidedVideoIdIsNotFound':
-            response = {
-                statusCode: 404,
-                body: JSON.stringify({
-                    code: errorHandler.code,
-                    message: `Provided videoId: ${errorHandler.area} is not found.`,
+                    message: `Required Parameter: ${errorHandler.area} are not provided.`,
                 }),
             };
             break;
@@ -79,12 +71,26 @@ const getVideoByVideoId = async (videoId: string):Promise<Video[]> => {
     }
 }
 
+const getVideosByChannelId = async (channelId: string):Promise<Video[]> => {
+    const videoIds = (await InfrastructureDynamoDB.getRecordsByDataValue(channelId))?.map(r=>r.id);
+    console.log(videoIds);
+    if (videoIds === undefined) {
+        return [];
+    }
+    const videos = await Promise.all(videoIds?.map(videoId => Video.init(videoId))) as Video[];
+    if (videos === undefined) {
+        return [];
+    } else {
+        return videos
+    }
+}
+
 const getVideos = async (requestParams: requestParams): Promise<APIGatewayProxyResult> => {
     let videos: Video[] = []
     if (requestParams.videoId !== undefined) {
-        videos = await getVideoByVideoId(requestParams.videoId)
+        videos = await getVideoByVideoId(requestParams.videoId);
     } else if (requestParams.channelId !== undefined){
-        
+        videos = await getVideosByChannelId(requestParams.channelId);
     }
 
     const resultVideos = videos.map(v=>{

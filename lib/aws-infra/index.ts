@@ -1,5 +1,5 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, QueryCommandInput } from '@aws-sdk/lib-dynamodb';
 import { fromIni } from '@aws-sdk/credential-provider-ini';
 import { Tag } from '../../lib/youtube';
 import { appConfig } from '../../config/index';
@@ -67,6 +67,37 @@ export class InfrastructureDynamoDB {
             );
             const getItem = result.Item as DDBRecord;
             return getItem;
+        } catch (e: any) {
+            console.log(e);
+            return;
+        }
+    }
+
+    public static async getRecordsByDataValue(dataValue: string): Promise<DDBRecord[] | undefined> {
+        const dDBClient = this.makeDDBClient();
+        try {
+            const tableName = appConfig.dataTableName;
+            const resultItems = []
+            const params:QueryCommandInput  = {
+                TableName: tableName,
+                IndexName: 'DataValueIndex',
+                ExpressionAttributeNames:{'#d': 'dataValue'},
+                ExpressionAttributeValues: { ":d": dataValue },
+                KeyConditionExpression: "#d = :d",
+                ReturnConsumedCapacity: 'TOTAL',
+                ExclusiveStartKey: undefined
+            }
+            let result = undefined;
+
+            do {
+                result = await dDBClient.send(
+                    new QueryCommand(params)
+                );
+                resultItems.push(result.Items as DDBRecord[]);
+                params.ExclusiveStartKey = result.LastEvaluatedKey
+            } while (result.LastEvaluatedKey !== undefined);
+
+            return resultItems.flat();
         } catch (e: any) {
             console.log(e);
             return;
