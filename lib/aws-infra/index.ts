@@ -79,37 +79,31 @@ export class InfrastructureDynamoDB {
         }
     }
 
-    public static async getRecordsByDataValue(dataValue: string, limit:number): Promise<DDBRecordsResponse | undefined> {
+    public static async getRecordsByDataValue(dataValue: string, limit:number, nextPageToken?: string): Promise<DDBRecordsResponse | undefined> {
         const dDBClient = this.makeDDBClient();
         try {
             const tableName = appConfig.dataTableName;
+            const exclusiveStartKey = nextPageToken === undefined? undefined : JSON.parse(Buffer.from(nextPageToken, 'base64').toString())
             const params:QueryCommandInput  = {
                 TableName: tableName,
                 IndexName: 'DataValueIndex',
-                ScanIndexForward: true,
+                ScanIndexForward: false,
                 ExpressionAttributeNames:{'#d': 'dataValue'},
                 ExpressionAttributeValues: { ":d": dataValue },
                 KeyConditionExpression: "#d = :d",
                 ReturnConsumedCapacity: 'TOTAL',
                 Limit: limit,
-                ExclusiveStartKey: {
-                    dataType: 'ChannelID',
-                    publishedUnixTime: 1651230013,
-                    id: 'YT_V_flfu8Up8udE',
-                    dataValue: 'YT_C_UCmalrXbCEmevDLz7hny5J2A'
-                }
+                ExclusiveStartKey: exclusiveStartKey
             }
 
             const result = await dDBClient.send(
                 new QueryCommand(params)
             );
             const token = result.LastEvaluatedKey === undefined ? undefined : Buffer.from(JSON.stringify(result.LastEvaluatedKey)).toString('base64')
-            // console.log(JSON.parse(Buffer.from(token, 'base64').toString()));
             const resultItems = result.Items as DDBRecord[];
-
             return {
                 records: resultItems,
-                count: result.Count,
+                count: result.Count as number,
                 nextPageToken: token
             };
         } catch (e: any) {

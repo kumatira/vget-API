@@ -13,6 +13,13 @@ type requestParams = {
     videoId?: string;
     channelId?: string;
     limit?: number;
+    nextPageToken? :string;
+}
+
+type getVideosResponse = {
+    videos: Video[];
+    count: number;
+    nextPageToken :string | null;
 }
 
 const validateReqParams = (params: any): ErrorHandler | undefined => {
@@ -56,7 +63,8 @@ const fulfillReqParams = (requestParams: any): requestParams => {
     if (!isBlank(requestParams.channelId)) {
         return {
             channelId: requestParams.channelId,
-            limit: isBlank(requestParams.limit)? 3 : Number(requestParams.limit)
+            limit: isBlank(requestParams.limit)? 3 : Number(requestParams.limit),
+            nextPageToken: isBlank(requestParams.nextPageToken)? undefined : requestParams.nextPageToken
         }
     }
     return {}
@@ -84,31 +92,30 @@ const getVideoByVideoId = async (videoId: string):Promise<Video[]> => {
     }
 }
 
-const getVideosByChannelId = async (channelId: string, limit: number):Promise<{videos: Video[], count?: number, nextPageToken?: string}> => {
-    const videoRecordsByChannelId = await InfrastructureDynamoDB.getRecordsByDataValue(channelId, limit)
-    const count = videoRecordsByChannelId?.count;
-    const videoIds = videoRecordsByChannelId?.records.map(r=>r.id);
-    const nextPageToken = videoRecordsByChannelId?.nextPageToken;
-    console.log(nextPageToken);
-    if (videoRecordsByChannelId === undefined || videoIds === undefined) {
+const getVideosByChannelId = async (channelId: string, limit: number, nextPageToken?: string):Promise<getVideosResponse> => {
+    const videoRecordsByChannelId = await InfrastructureDynamoDB.getRecordsByDataValue(channelId, limit, nextPageToken);
+    if (videoRecordsByChannelId === undefined) {
         return {
             videos: [],
             count: 0,
-            nextPageToken: undefined
+            nextPageToken: null
         };
     }
+    const count = videoRecordsByChannelId.count === undefined ? 0 : videoRecordsByChannelId.count;
+    const resNextPageToken = videoRecordsByChannelId.nextPageToken === undefined? null  : videoRecordsByChannelId.nextPageToken;
+    const videoIds = videoRecordsByChannelId.records.map(r=>r.id);
     const videos = await Promise.all(videoIds?.map(videoId => Video.init(videoId))) as Video[];
     if (videos === undefined) {
         return {
             videos: [],
             count: 0,
-            nextPageToken: undefined
+            nextPageToken: null
         };
     } else {
         return {
             videos: videos,
-            count: videoRecordsByChannelId.count,
-            nextPageToken: videoRecordsByChannelId.nextPageToken
+            count: count,
+            nextPageToken: resNextPageToken
         }
     }
 }
@@ -116,11 +123,11 @@ const getVideosByChannelId = async (channelId: string, limit: number):Promise<{v
 const getVideos = async (reqParams: requestParams): Promise<APIGatewayProxyResult> => {
     let videos: Video[] = [];
     let count: number | undefined = undefined;
-    let nextPageToken: string | undefined = undefined
+    let nextPageToken: string | null = null
     if (reqParams.videoId !== undefined) {
         videos = await getVideoByVideoId(reqParams.videoId);
     } else if (reqParams.channelId !== undefined && reqParams.limit !== undefined){
-        const videosByChannelId = await getVideosByChannelId(reqParams.channelId, reqParams.limit);
+        const videosByChannelId = await getVideosByChannelId(reqParams.channelId, reqParams.limit, reqParams.nextPageToken);
         videos = videosByChannelId.videos;
         count = videosByChannelId.count;
         nextPageToken = videosByChannelId.nextPageToken;
@@ -184,7 +191,8 @@ if (isRunOnLocal()) {
         const event = {
             queryStringParameters: {
                 channelId: 'YT_C_UCmalrXbCEmevDLz7hny5J2A',
-                limit: '3'
+                limit: '5',
+                nextPageToken: 'eyJkYXRhVHlwZSI6IkNoYW5uZWxJRCIsInB1Ymxpc2hlZFVuaXhUaW1lIjoxNjUxOTczMDIxLCJpZCI6IllUX1ZfaTFZVGw0bmV1UnciLCJkYXRhVmFsdWUiOiJZVF9DX1VDbWFsclhiQ0VtZXZETHo3aG55NUoyQSJ9'
             },
         } as unknown as APIGatewayProxyEvent;
         const res = await lambdaHandler(event);
