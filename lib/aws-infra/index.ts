@@ -17,7 +17,7 @@ export type DDBRecord = {
     tags?: Tag[];
 };
 
-export type DDBRecordsResponse = {
+type DDBRecordsResponse = {
     records: DDBRecord[];
     count?: number,
     nextPageToken?: string
