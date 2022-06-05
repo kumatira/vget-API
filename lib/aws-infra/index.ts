@@ -19,8 +19,8 @@ export type DDBRecord = {
 
 type DDBRecordsResponse = {
     records: DDBRecord[];
-    count?: number,
-    nextPageToken?: string
+    count?: number;
+    nextPageToken?: string;
 };
 
 export class InfrastructureDynamoDB {
@@ -79,32 +79,38 @@ export class InfrastructureDynamoDB {
         }
     }
 
-    public static async getRecordsByDataValue(dataValue: string, limit:number, nextPageToken?: string): Promise<DDBRecordsResponse | undefined> {
+    public static async getRecordsByDataValue(
+        dataValue: string,
+        limit: number,
+        nextPageToken?: string
+    ): Promise<DDBRecordsResponse | undefined> {
         const dDBClient = this.makeDDBClient();
         try {
             const tableName = appConfig.dataTableName;
-            const exclusiveStartKey = nextPageToken === undefined? undefined : JSON.parse(Buffer.from(nextPageToken, 'base64').toString())
-            const params:QueryCommandInput  = {
+            const exclusiveStartKey =
+                nextPageToken === undefined ? undefined : JSON.parse(Buffer.from(nextPageToken, 'base64').toString());
+            const params: QueryCommandInput = {
                 TableName: tableName,
                 IndexName: 'DataValueIndex',
                 ScanIndexForward: false,
-                ExpressionAttributeNames:{'#d': 'dataValue'},
-                ExpressionAttributeValues: { ":d": dataValue },
-                KeyConditionExpression: "#d = :d",
+                ExpressionAttributeNames: { '#d': 'dataValue' },
+                ExpressionAttributeValues: { ':d': dataValue },
+                KeyConditionExpression: '#d = :d',
                 ReturnConsumedCapacity: 'TOTAL',
                 Limit: limit,
-                ExclusiveStartKey: exclusiveStartKey
-            }
+                ExclusiveStartKey: exclusiveStartKey,
+            };
 
-            const result = await dDBClient.send(
-                new QueryCommand(params)
-            );
-            const token = result.LastEvaluatedKey === undefined ? undefined : Buffer.from(JSON.stringify(result.LastEvaluatedKey)).toString('base64')
+            const result = await dDBClient.send(new QueryCommand(params));
+            const token =
+                result.LastEvaluatedKey === undefined
+                    ? undefined
+                    : Buffer.from(JSON.stringify(result.LastEvaluatedKey)).toString('base64');
             const resultItems = result.Items as DDBRecord[];
             return {
                 records: resultItems,
                 count: result.Count as number,
-                nextPageToken: token
+                nextPageToken: token,
             };
         } catch (e: any) {
             console.log(e);
@@ -119,8 +125,8 @@ export class InfrastructureDynamoDB {
             const result = await dDBClient.send(
                 new QueryCommand({
                     TableName: tableName,
-                    ExpressionAttributeNames:{'#i': 'id'},
-                    ExpressionAttributeValues: { ':i': `${id}`},
+                    ExpressionAttributeNames: { '#i': 'id' },
+                    ExpressionAttributeValues: { ':i': `${id}` },
                     KeyConditionExpression: '#i = :i',
                 })
             );

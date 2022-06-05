@@ -7,7 +7,7 @@ type ErrorHandler = {
     area?: string;
 };
 
-const validateReqParams = (pathParameters: any, queryParameters: any): ErrorHandler | undefined => {
+const validateReqParams = (pathParameters: any): ErrorHandler | undefined => {
     if (pathParameters === null || pathParameters === undefined) {
         return {
             code: 'RequiredParamIsNotProvidedAtAll',
@@ -50,7 +50,7 @@ const makeErrorResponse = (errorHandler: ErrorHandler): APIGatewayProxyResult =>
     return response;
 };
 
-const getVideos = async (pathParameters: any, queryParameters: any): Promise<APIGatewayProxyResult> => {
+const getVideos = async (pathParameters: any): Promise<APIGatewayProxyResult> => {
     const video = await Video.init(pathParameters.videoId);
 
     if (video === undefined) {
@@ -93,12 +93,10 @@ const getVideos = async (pathParameters: any, queryParameters: any): Promise<API
 
 const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     const requestPathParams = event.pathParameters;
-    const requestQueryParams = event.queryStringParameters;
     console.log(`requestPathParams: ${JSON.stringify(requestPathParams, null, 2)}`);
-    console.log(`requestQueryParams: ${JSON.stringify(requestQueryParams, null, 2)}`);
-    const errorHandler = validateReqParams(requestPathParams, requestQueryParams);
+    const errorHandler = validateReqParams(requestPathParams);
 
-    const response = errorHandler === undefined ? await getVideos(requestPathParams, requestQueryParams) : makeErrorResponse(errorHandler);
+    const response = errorHandler === undefined ? await getVideos(requestPathParams) : makeErrorResponse(errorHandler);
 
     console.log(`statusCode: ${response.statusCode}`);
     console.log(`responseBody: ${JSON.stringify(JSON.parse(response.body), null, 2)}`);
@@ -115,6 +113,6 @@ if (isRunOnLocal()) {
                 videoId: 'YT_V_ZYuoZuy2KqI',
             },
         } as unknown as APIGatewayProxyEvent;
-        const res = await lambdaHandler(event);
+        await lambdaHandler(event);
     })();
 }
