@@ -1,63 +1,76 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { Video } from '../../lib/youtube';
 import { InfrastructureDynamoDB } from '../../lib/aws-infra';
-import { isRunOnLocal, isBlank } from '../../lib/util';
+import { isRunOnLocal, isBlank, isNumeric } from '../../lib/util';
 
 type ErrorHandler = {
+    statusCode: number;
     code: string;
-    area?: string;
+    message: string;
 };
 
 type requestParams = {
     videoId?: string;
     channelId?: string;
+    limit?: number;
 }
 
-const validateReqParams = (requestParams: any): ErrorHandler | undefined => {
-    if (requestParams === null || requestParams === undefined) {
+const validateReqParams = (params: any): ErrorHandler | undefined => {
+    if (params === null || params === undefined || Object.keys(params).length === 0) {
         return {
+            statusCode: 404,
             code: 'RequiredParamIsNotProvidedAtAll',
+            message: 'Required Parameter is not provided.'
         };
     }
-    if (isBlank(requestParams.videoId) && isBlank(requestParams.channelId) ) {
+    if (isBlank(params.videoId) && isBlank(params.channelId) ) {
         return {
+            statusCode: 404,
             code: 'RequiredParamIsNotProvided',
-            area: 'videoId or channelId',
+            message: `One of the required parameters [videoId, channelId] must be provided.`,
+        };
+    }
+    if (!isBlank(params.limit) && !isNumeric(params.limit)) {
+        return {
+            statusCode: 404,
+            code: 'ProvidedLimitParamIsNotNumeric',
+            message: 'parameter [limit] must be numeric'
+        };
+    }
+    if (!isBlank(params.limit) && Number(params.limit) > 40) {
+        return {
+            statusCode: 404,
+            code: 'ProvidedLimitParamIsNotNumeric',
+            message: 'parameter [limit] must be 40 or less'
         };
     }
     return undefined;
 };
 
-const makeErrorResponse = (errorHandler: ErrorHandler): APIGatewayProxyResult => {
-    let response: APIGatewayProxyResult;
-    switch (errorHandler.code) {
-        case 'RequiredParamIsNotProvidedAtAll':
-            response = {
-                statusCode: 400,
-                body: JSON.stringify({
-                    code: errorHandler.code,
-                    message: 'Required Parameter is not provided.',
-                }),
-            };
-            break;
-        case 'RequiredParamIsNotProvided':
-            response = {
-                statusCode: 400,
-                body: JSON.stringify({
-                    code: errorHandler.code,
-                    message: `Required Parameter: ${errorHandler.area} are not provided.`,
-                }),
-            };
-            break;
-        default:
-            response = {
-                statusCode: 500,
-                body: JSON.stringify({
-                    code: 'unhandledError',
-                    message: `Something wrong...`,
-                }),
-            };
+const fulfillReqParams = (requestParams: any): requestParams => {
+    if (!isBlank(requestParams.videoId)) {
+        return {
+            videoId: requestParams.videoId
+        }
     }
+    if (!isBlank(requestParams.channelId)) {
+        return {
+            channelId: requestParams.channelId,
+            limit: isBlank(requestParams.limit)? 3 : Number(requestParams.limit)
+        }
+    }
+    return {}
+};
+
+const makeErrorResponse = (errorHandler: ErrorHandler): APIGatewayProxyResult => {
+    // let response: APIGatewayProxyResult;
+    const response: APIGatewayProxyResult = {
+        statusCode: errorHandler.statusCode,
+        body: JSON.stringify({
+            code: errorHandler.code,
+            message: errorHandler.message,
+        }),
+    };
 
     return response;
 };
@@ -71,8 +84,8 @@ const getVideoByVideoId = async (videoId: string):Promise<Video[]> => {
     }
 }
 
-const getVideosByChannelId = async (channelId: string):Promise<Video[]> => {
-    const videoIds = (await InfrastructureDynamoDB.getRecordsByDataValue(channelId))?.map(r=>r.id);
+const getVideosByChannelId = async (channelId: string, limit: number):Promise<Video[]> => {
+    const videoIds = (await InfrastructureDynamoDB.getRecordsByDataValue(channelId, limit))?.map(r=>r.id);
     console.log(videoIds);
     if (videoIds === undefined) {
         return [];
@@ -85,12 +98,12 @@ const getVideosByChannelId = async (channelId: string):Promise<Video[]> => {
     }
 }
 
-const getVideos = async (requestParams: requestParams): Promise<APIGatewayProxyResult> => {
+const getVideos = async (reqParams: requestParams): Promise<APIGatewayProxyResult> => {
     let videos: Video[] = []
-    if (requestParams.videoId !== undefined) {
-        videos = await getVideoByVideoId(requestParams.videoId);
-    } else if (requestParams.channelId !== undefined){
-        videos = await getVideosByChannelId(requestParams.channelId);
+    if (reqParams.videoId !== undefined) {
+        videos = await getVideoByVideoId(reqParams.videoId);
+    } else if (reqParams.channelId !== undefined && reqParams.limit !== undefined){
+        videos = await getVideosByChannelId(reqParams.channelId, reqParams.limit);
     }
 
     const resultVideos = videos.map(v=>{
@@ -130,7 +143,7 @@ const lambdaHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPro
     const requestParams = event.queryStringParameters;
     console.log(`requestBody: ${JSON.stringify(requestParams, null, 2)}`);
     const errorHandler = validateReqParams(requestParams);
-    const validatedRequestParams = requestParams as requestParams;
+    const validatedRequestParams = fulfillReqParams(requestParams);
 
     const response = errorHandler === undefined ? await getVideos(validatedRequestParams) : makeErrorResponse(errorHandler);
     response.headers = {
@@ -148,7 +161,8 @@ if (isRunOnLocal()) {
     (async () => {
         const event = {
             queryStringParameters: {
-                videoId: 'YT_V_IYN-yKxsbqM',
+                channelId: 'YT_C_UCmalrXbCEmevDLz7hny5J2A',
+                limit: '3'
             },
         } as unknown as APIGatewayProxyEvent;
         const res = await lambdaHandler(event);

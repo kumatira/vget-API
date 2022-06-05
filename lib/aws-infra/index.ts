@@ -73,11 +73,10 @@ export class InfrastructureDynamoDB {
         }
     }
 
-    public static async getRecordsByDataValue(dataValue: string): Promise<DDBRecord[] | undefined> {
+    public static async getRecordsByDataValue(dataValue: string, limit:number): Promise<DDBRecord[] | undefined> {
         const dDBClient = this.makeDDBClient();
         try {
             const tableName = appConfig.dataTableName;
-            const resultItems = []
             const params:QueryCommandInput  = {
                 TableName: tableName,
                 IndexName: 'DataValueIndex',
@@ -85,19 +84,16 @@ export class InfrastructureDynamoDB {
                 ExpressionAttributeValues: { ":d": dataValue },
                 KeyConditionExpression: "#d = :d",
                 ReturnConsumedCapacity: 'TOTAL',
+                Limit: limit,
                 ExclusiveStartKey: undefined
             }
-            let result = undefined;
 
-            do {
-                result = await dDBClient.send(
-                    new QueryCommand(params)
-                );
-                resultItems.push(result.Items as DDBRecord[]);
-                params.ExclusiveStartKey = result.LastEvaluatedKey
-            } while (result.LastEvaluatedKey !== undefined);
+            const result = await dDBClient.send(
+                new QueryCommand(params)
+            );
+            const resultItems = result.Items as DDBRecord[];
 
-            return resultItems.flat();
+            return resultItems;
         } catch (e: any) {
             console.log(e);
             return;

@@ -5,3 +5,7 @@ export const isRunOnLocal = (): boolean => {
 export const isBlank = (item: string | undefined): boolean => {
     return (item === undefined || item === '')
 };
+
+export const isNumeric = (string: string): boolean => {
+    return /^-?\d+$/.test(string);
+};
