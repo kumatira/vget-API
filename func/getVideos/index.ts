@@ -19,7 +19,7 @@ type requestParams = {
 type getVideosResponse = {
     videos: Video[];
     count: number;
-    nextPageToken :string | null;
+    nextPageToken?:string;
 }
 
 const validateReqParams = (params: any): ErrorHandler | undefined => {
@@ -63,7 +63,7 @@ const fulfillReqParams = (requestParams: any): requestParams => {
     if (!isBlank(requestParams.channelId)) {
         return {
             channelId: requestParams.channelId,
-            limit: isBlank(requestParams.limit)? 3 : Number(requestParams.limit),
+            limit: isBlank(requestParams.limit)? 40 : Number(requestParams.limit),
             nextPageToken: isBlank(requestParams.nextPageToken)? undefined : requestParams.nextPageToken
         }
     }
@@ -83,12 +83,18 @@ const makeErrorResponse = (errorHandler: ErrorHandler): APIGatewayProxyResult =>
     return response;
 };
 
-const getVideoByVideoId = async (videoId: string):Promise<Video[]> => {
+const getVideoByVideoId = async (videoId: string):Promise<getVideosResponse> => {
     const video = await Video.init(videoId);
     if (video === undefined) {
-        return [];
+        return {
+            videos: [],
+            count: 0
+        };
     } else {
-        return [video]
+        return {
+            videos: [video],
+            count: 1
+        }
     }
 }
 
@@ -97,19 +103,17 @@ const getVideosByChannelId = async (channelId: string, limit: number, nextPageTo
     if (videoRecordsByChannelId === undefined) {
         return {
             videos: [],
-            count: 0,
-            nextPageToken: null
+            count: 0
         };
     }
     const count = videoRecordsByChannelId.count === undefined ? 0 : videoRecordsByChannelId.count;
-    const resNextPageToken = videoRecordsByChannelId.nextPageToken === undefined? null  : videoRecordsByChannelId.nextPageToken;
+    const resNextPageToken = videoRecordsByChannelId.nextPageToken;
     const videoIds = videoRecordsByChannelId.records.map(r=>r.id);
     const videos = await Promise.all(videoIds?.map(videoId => Video.init(videoId))) as Video[];
     if (videos === undefined) {
         return {
             videos: [],
-            count: 0,
-            nextPageToken: null
+            count: 0
         };
     } else {
         return {
@@ -125,12 +129,15 @@ const getVideos = async (reqParams: requestParams): Promise<APIGatewayProxyResul
     let count: number | undefined = undefined;
     let nextPageToken: string | null = null
     if (reqParams.videoId !== undefined) {
-        videos = await getVideoByVideoId(reqParams.videoId);
+        const videosByVideoId = await getVideoByVideoId(reqParams.videoId);
+        videos = videosByVideoId.videos;
+        count = 1;
+        nextPageToken = null;
     } else if (reqParams.channelId !== undefined && reqParams.limit !== undefined){
         const videosByChannelId = await getVideosByChannelId(reqParams.channelId, reqParams.limit, reqParams.nextPageToken);
         videos = videosByChannelId.videos;
         count = videosByChannelId.count;
-        nextPageToken = videosByChannelId.nextPageToken;
+        nextPageToken = videosByChannelId.nextPageToken ?? null;
     }
 
     const resultVideos = videos.map(v=>{

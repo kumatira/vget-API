@@ -112,21 +112,23 @@ export class InfrastructureDynamoDB {
         }
     }
 
-    public static async getVideoByVideoId(videoId: string): Promise<DDBRecord[] | undefined> {
+    public static async getRecordById(id: string): Promise<DDBRecord[] | undefined> {
         const dDBClient = this.makeDDBClient();
         try {
             const tableName = appConfig.dataTableName;
             const result = await dDBClient.send(
                 new QueryCommand({
                     TableName: tableName,
-                    KeyConditionExpression: 'id = :id',
-                    ExpressionAttributeValues: {
-                        ':id': `${videoId}`,
-                    },
+                    ExpressionAttributeNames:{'#i': 'id'},
+                    ExpressionAttributeValues: { ':i': `${id}`},
+                    KeyConditionExpression: '#i = :i',
                 })
             );
-            const queriedRecords = result.Items as DDBRecord[];
-            return queriedRecords;
+            if (result.Items === undefined) {
+                return;
+            }
+            const queriedRecords = result.Items;
+            return queriedRecords as DDBRecord[];
         } catch (e: any) {
             console.log(e);
             return;
