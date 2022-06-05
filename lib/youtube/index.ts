@@ -10,7 +10,7 @@ export class Video {
     readonly actualStartTime?: string;
     readonly actualEndTime?: string;
     readonly scheduledStartTime?: string;
-    readonly tags?: string[];
+    readonly tags: string[];
     readonly Actors?: string[];
     readonly mainActor?: string;
 
@@ -28,6 +28,8 @@ export class Video {
         if (DDBRecords.some((r) => r.dataType.startsWith('Tag:'))) {
             const targetRecords = DDBRecords.filter((r) => r.dataType.startsWith('Tag:')).map(r=>r.dataValue?.replace('Tag:', '')) as string[];
             this.tags = targetRecords;
+        } else {
+            this.tags = []
         }
     }
     public static async init(videoId: string): Promise<Video | undefined> {
