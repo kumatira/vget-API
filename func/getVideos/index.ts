@@ -71,7 +71,6 @@ const fulfillReqParams = (requestParams: any): requestParams => {
 };
 
 const makeErrorResponse = (errorHandler: ErrorHandler): APIGatewayProxyResult => {
-    // let response: APIGatewayProxyResult;
     const response: APIGatewayProxyResult = {
         statusCode: errorHandler.statusCode,
         body: JSON.stringify({

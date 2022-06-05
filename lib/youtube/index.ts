@@ -31,7 +31,6 @@ export class Video {
         }
     }
     public static async init(videoId: string): Promise<Video | undefined> {
-        console.log(`videoId: ${videoId}`);
         const DDBRecords: DDBRecord[] | undefined = await InfrastructureDynamoDB.getRecordById(videoId);
         if (DDBRecords === undefined) return;
         if (DDBRecords.length === 0) return;
