@@ -146,24 +146,7 @@ const getVideos = async (reqParams: requestParams): Promise<APIGatewayProxyResul
         nextPageToken = videosByChannelId.nextPageToken ?? null;
     }
 
-    const resultVideos = videos.map((v) => {
-        const responseVideoObj: any = {};
-        responseVideoObj.id = v.id;
-        responseVideoObj.title = v.title;
-        responseVideoObj.publishedAt = v.publishedAt;
-        responseVideoObj.channelID = v.channelId;
-        if (v.scheduledStartTime !== undefined) {
-            responseVideoObj.scheduledStartTime = v.scheduledStartTime;
-        }
-        if (v.actualStartTime !== undefined) {
-            responseVideoObj.actualStartTime = v.actualStartTime;
-        }
-        if (v.actualEndTime !== undefined) {
-            responseVideoObj.actualEndTime = v.actualEndTime;
-        }
-        responseVideoObj.tags = v.tags;
-        return responseVideoObj;
-    });
+    const resultVideos = videos.map((v) => v.makeVideoResponse());
 
     const okResponse: APIGatewayProxyResult = {
         statusCode: 200,
@@ -202,10 +185,11 @@ if (isRunOnLocal()) {
     (async () => {
         const event = {
             queryStringParameters: {
+                videoId: 'YT_V_2jNlCjCY4ts',
                 channelId: 'YT_C_UCmalrXbCEmevDLz7hny5J2A',
                 limit: '5',
-                nextPageToken:
-                    'eyJkYXRhVHlwZSI6IkNoYW5uZWxJRCIsInB1Ymxpc2hlZFVuaXhUaW1lIjoxNjUxOTczMDIxLCJpZCI6IllUX1ZfaTFZVGw0bmV1UnciLCJkYXRhVmFsdWUiOiJZVF9DX1VDbWFsclhiQ0VtZXZETHo3aG55NUoyQSJ9',
+                // nextPageToken:
+                //     'eyJkYXRhVHlwZSI6IkNoYW5uZWxJRCIsInB1Ymxpc2hlZFVuaXhUaW1lIjoxNjUxOTczMDIxLCJpZCI6IllUX1ZfaTFZVGw0bmV1UnciLCJkYXRhVmFsdWUiOiJZVF9DX1VDbWFsclhiQ0VtZXZETHo3aG55NUoyQSJ9',
             },
         } as unknown as APIGatewayProxyEvent;
         await lambdaHandler(event);

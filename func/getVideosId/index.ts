@@ -61,23 +61,7 @@ const getVideos = async (pathParameters: any): Promise<APIGatewayProxyResult> =>
         return makeErrorResponse(errorHandler);
     }
 
-    const responseVideoObj: any = {};
-    responseVideoObj.id = video.id;
-    responseVideoObj.title = video.title;
-    responseVideoObj.publishedAt = video.publishedAt;
-    responseVideoObj.channelID = video.channelId;
-    if (video.scheduledStartTime !== undefined) {
-        responseVideoObj.scheduledStartTime = video.scheduledStartTime;
-    }
-    if (video.actualStartTime !== undefined) {
-        responseVideoObj.actualStartTime = video.actualStartTime;
-    }
-    if (video.actualEndTime !== undefined) {
-        responseVideoObj.actualEndTime = video.actualEndTime;
-    }
-    if (video.tags !== undefined) {
-        responseVideoObj.tags = video.tags;
-    }
+    const responseVideoObj = video.makeVideoResponse();
 
     const okResponse: APIGatewayProxyResult = {
         statusCode: 200,
@@ -110,7 +94,7 @@ if (isRunOnLocal()) {
     (async () => {
         const event = {
             pathParameters: {
-                videoId: 'YT_V_ZYuoZuy2KqI',
+                videoId: 'YT_V_2jNlCjCY4ts',
             },
         } as unknown as APIGatewayProxyEvent;
         await lambdaHandler(event);

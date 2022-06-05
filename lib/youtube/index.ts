@@ -2,6 +2,17 @@ import { InfrastructureDynamoDB, DDBRecord } from '../../lib/aws-infra';
 
 type videoId = string;
 
+type videoResponse = {
+    id: string;
+    title: string;
+    publishedAt: string;
+    channelID: string;
+    scheduledStartTime?: string;
+    actualStartTime?: string;
+    actualEndTime?: string;
+    tags: string[];
+};
+
 export class Video {
     readonly id: string;
     readonly title: string;
@@ -44,6 +55,26 @@ export class Video {
     public static async isExistVideoId(videoId: string): Promise<boolean> {
         const getItem = await InfrastructureDynamoDB.getItemByTable(videoId, 'ChannelID');
         return getItem !== undefined;
+    }
+
+    public makeVideoResponse(): videoResponse {
+        const videoResponse: videoResponse = {
+            id: this.id,
+            title: this.title,
+            publishedAt: this.publishedAt,
+            channelID: this.channelId,
+            tags: this.tags,
+        };
+        if (this.scheduledStartTime !== undefined) {
+            videoResponse.scheduledStartTime = this.scheduledStartTime;
+        }
+        if (this.actualStartTime !== undefined) {
+            videoResponse.actualStartTime = this.actualStartTime;
+        }
+        if (this.actualEndTime !== undefined) {
+            videoResponse.actualEndTime = this.actualEndTime;
+        }
+        return videoResponse;
     }
 }
 
