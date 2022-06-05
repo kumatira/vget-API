@@ -17,6 +17,12 @@ export type DDBRecord = {
     tags?: Tag[];
 };
 
+export type DDBRecordsResponse = {
+    records: DDBRecord[];
+    count?: number,
+    nextPageToken?: string
+};
+
 export class InfrastructureDynamoDB {
     private static makeDDBClient = (): DynamoDBDocumentClient => {
         if (isRunOnLocal()) {
@@ -73,27 +79,39 @@ export class InfrastructureDynamoDB {
         }
     }
 
-    public static async getRecordsByDataValue(dataValue: string, limit:number): Promise<DDBRecord[] | undefined> {
+    public static async getRecordsByDataValue(dataValue: string, limit:number): Promise<DDBRecordsResponse | undefined> {
         const dDBClient = this.makeDDBClient();
         try {
             const tableName = appConfig.dataTableName;
             const params:QueryCommandInput  = {
                 TableName: tableName,
                 IndexName: 'DataValueIndex',
+                ScanIndexForward: true,
                 ExpressionAttributeNames:{'#d': 'dataValue'},
                 ExpressionAttributeValues: { ":d": dataValue },
                 KeyConditionExpression: "#d = :d",
                 ReturnConsumedCapacity: 'TOTAL',
                 Limit: limit,
-                ExclusiveStartKey: undefined
+                ExclusiveStartKey: {
+                    dataType: 'ChannelID',
+                    publishedUnixTime: 1651230013,
+                    id: 'YT_V_flfu8Up8udE',
+                    dataValue: 'YT_C_UCmalrXbCEmevDLz7hny5J2A'
+                }
             }
 
             const result = await dDBClient.send(
                 new QueryCommand(params)
             );
+            const token = result.LastEvaluatedKey === undefined ? undefined : Buffer.from(JSON.stringify(result.LastEvaluatedKey)).toString('base64')
+            // console.log(JSON.parse(Buffer.from(token, 'base64').toString()));
             const resultItems = result.Items as DDBRecord[];
 
-            return resultItems;
+            return {
+                records: resultItems,
+                count: result.Count,
+                nextPageToken: token
+            };
         } catch (e: any) {
             console.log(e);
             return;

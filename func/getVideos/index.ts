@@ -84,26 +84,46 @@ const getVideoByVideoId = async (videoId: string):Promise<Video[]> => {
     }
 }
 
-const getVideosByChannelId = async (channelId: string, limit: number):Promise<Video[]> => {
-    const videoIds = (await InfrastructureDynamoDB.getRecordsByDataValue(channelId, limit))?.map(r=>r.id);
-    console.log(videoIds);
-    if (videoIds === undefined) {
-        return [];
+const getVideosByChannelId = async (channelId: string, limit: number):Promise<{videos: Video[], count?: number, nextPageToken?: string}> => {
+    const videoRecordsByChannelId = await InfrastructureDynamoDB.getRecordsByDataValue(channelId, limit)
+    const count = videoRecordsByChannelId?.count;
+    const videoIds = videoRecordsByChannelId?.records.map(r=>r.id);
+    const nextPageToken = videoRecordsByChannelId?.nextPageToken;
+    console.log(nextPageToken);
+    if (videoRecordsByChannelId === undefined || videoIds === undefined) {
+        return {
+            videos: [],
+            count: 0,
+            nextPageToken: undefined
+        };
     }
     const videos = await Promise.all(videoIds?.map(videoId => Video.init(videoId))) as Video[];
     if (videos === undefined) {
-        return [];
+        return {
+            videos: [],
+            count: 0,
+            nextPageToken: undefined
+        };
     } else {
-        return videos
+        return {
+            videos: videos,
+            count: videoRecordsByChannelId.count,
+            nextPageToken: videoRecordsByChannelId.nextPageToken
+        }
     }
 }
 
 const getVideos = async (reqParams: requestParams): Promise<APIGatewayProxyResult> => {
-    let videos: Video[] = []
+    let videos: Video[] = [];
+    let count: number | undefined = undefined;
+    let nextPageToken: string | undefined = undefined
     if (reqParams.videoId !== undefined) {
         videos = await getVideoByVideoId(reqParams.videoId);
     } else if (reqParams.channelId !== undefined && reqParams.limit !== undefined){
-        videos = await getVideosByChannelId(reqParams.channelId, reqParams.limit);
+        const videosByChannelId = await getVideosByChannelId(reqParams.channelId, reqParams.limit);
+        videos = videosByChannelId.videos;
+        count = videosByChannelId.count;
+        nextPageToken = videosByChannelId.nextPageToken;
     }
 
     const resultVideos = videos.map(v=>{
@@ -132,6 +152,8 @@ const getVideos = async (reqParams: requestParams): Promise<APIGatewayProxyResul
         body: JSON.stringify({
             ResultSet: {
                 apiVersion: '0.0.1',
+                count: count,
+                nextPageToken: nextPageToken,
                 videos: resultVideos,
             },
         })
