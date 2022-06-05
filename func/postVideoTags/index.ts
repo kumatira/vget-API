@@ -9,7 +9,7 @@ type ErrorHandler = {
 
 type tagRequestObj = {
     videoId: string;
-    tag:string
+    tag: string;
 };
 
 const validateReqParams = (requestBody: any): ErrorHandler | undefined => {
@@ -24,8 +24,11 @@ const validateReqParams = (requestBody: any): ErrorHandler | undefined => {
             area: 'tags',
         };
     }
-    if (requestBody.tags.some((tag: tagRequestObj)=> !tag.tag.includes(':'))) {
-        const invalidTags = requestBody.tags.filter((tag: tagRequestObj)=> !tag.tag.includes(':')).map((t:tagRequestObj)=>t.tag).join(',')
+    if (requestBody.tags.some((tag: tagRequestObj) => !tag.tag.includes(':'))) {
+        const invalidTags = requestBody.tags
+            .filter((tag: tagRequestObj) => !tag.tag.includes(':'))
+            .map((t: tagRequestObj) => t.tag)
+            .join(',');
         return {
             code: 'ProvidedTagsAreInvalid',
             area: invalidTags,
@@ -91,7 +94,10 @@ const postVideoTags = async (requestParams: { tags: tagRequestObj[] }): Promise<
     const notFoundRequest = requestParams.tags.filter((t, i: number) => !isExistList[i]);
     const notFoundRequestIds = notFoundRequest.map((t) => t.videoId);
     if (notFoundRequestIds.length > 0) {
-        return makeErrorResponse({ code: 'ProvidedVideoIdIsNotFound', area: notFoundRequestIds.join(',') });
+        return makeErrorResponse({
+            code: 'ProvidedVideoIdIsNotFound',
+            area: notFoundRequestIds.join(','),
+        });
     }
 
     const requestedTags = requestParams.tags.map((t) => new Tag(t));
@@ -139,6 +145,6 @@ if (isRunOnLocal()) {
                 ],
             }),
         } as unknown as APIGatewayProxyEvent;
-        const res = await lambdaHandler(event);
+        await lambdaHandler(event);
     })();
 }

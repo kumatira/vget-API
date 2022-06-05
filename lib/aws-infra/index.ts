@@ -1,5 +1,5 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, QueryCommandInput } from '@aws-sdk/lib-dynamodb';
 import { fromIni } from '@aws-sdk/credential-provider-ini';
 import { Tag } from '../../lib/youtube';
 import { appConfig } from '../../config/index';
@@ -15,6 +15,12 @@ export type DDBRecord = {
         by: string;
     };
     tags?: Tag[];
+};
+
+type DDBRecordsResponse = {
+    records: DDBRecord[];
+    count?: number;
+    nextPageToken?: string;
 };
 
 export class InfrastructureDynamoDB {
@@ -73,21 +79,62 @@ export class InfrastructureDynamoDB {
         }
     }
 
-    public static async getVideoByVideoId(videoId: string): Promise<DDBRecord[] | undefined> {
+    public static async getRecordsByDataValue(
+        dataValue: string,
+        limit: number,
+        nextPageToken?: string
+    ): Promise<DDBRecordsResponse | undefined> {
+        const dDBClient = this.makeDDBClient();
+        try {
+            const tableName = appConfig.dataTableName;
+            const exclusiveStartKey =
+                nextPageToken === undefined ? undefined : JSON.parse(Buffer.from(nextPageToken, 'base64').toString());
+            const params: QueryCommandInput = {
+                TableName: tableName,
+                IndexName: 'DataValueIndex',
+                ScanIndexForward: false,
+                ExpressionAttributeNames: { '#d': 'dataValue' },
+                ExpressionAttributeValues: { ':d': dataValue },
+                KeyConditionExpression: '#d = :d',
+                ReturnConsumedCapacity: 'TOTAL',
+                Limit: limit,
+                ExclusiveStartKey: exclusiveStartKey,
+            };
+
+            const result = await dDBClient.send(new QueryCommand(params));
+            const token =
+                result.LastEvaluatedKey === undefined
+                    ? undefined
+                    : Buffer.from(JSON.stringify(result.LastEvaluatedKey)).toString('base64');
+            const resultItems = result.Items as DDBRecord[];
+            return {
+                records: resultItems,
+                count: result.Count as number,
+                nextPageToken: token,
+            };
+        } catch (e: any) {
+            console.log(e);
+            return;
+        }
+    }
+
+    public static async getRecordById(id: string): Promise<DDBRecord[] | undefined> {
         const dDBClient = this.makeDDBClient();
         try {
             const tableName = appConfig.dataTableName;
             const result = await dDBClient.send(
                 new QueryCommand({
                     TableName: tableName,
-                    KeyConditionExpression: 'id = :id',
-                    ExpressionAttributeValues: {
-                        ':id': `${videoId}`,
-                    },
+                    ExpressionAttributeNames: { '#i': 'id' },
+                    ExpressionAttributeValues: { ':i': `${id}` },
+                    KeyConditionExpression: '#i = :i',
                 })
             );
-            const queriedRecords = result.Items as DDBRecord[];
-            return queriedRecords;
+            if (result.Items === undefined) {
+                return;
+            }
+            const queriedRecords = result.Items;
+            return queriedRecords as DDBRecord[];
         } catch (e: any) {
             console.log(e);
             return;

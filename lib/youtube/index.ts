@@ -1,5 +1,7 @@
 import { InfrastructureDynamoDB, DDBRecord } from '../../lib/aws-infra';
 
+type videoId = string;
+
 export class Video {
     readonly id: string;
     readonly title: string;
@@ -8,12 +10,12 @@ export class Video {
     readonly actualStartTime?: string;
     readonly actualEndTime?: string;
     readonly scheduledStartTime?: string;
-    readonly tags?: string[];
+    readonly tags: string[];
     readonly Actors?: string[];
     readonly mainActor?: string;
 
-    private constructor(DDBRecords: DDBRecord[]) {
-        this.id = DDBRecords.find((r) => r.dataType === 'VideoCollectionMetaData')?.id as string;
+    private constructor(videoId: videoId, DDBRecords: DDBRecord[]) {
+        this.id = videoId;
         this.title = DDBRecords.find((r) => r.dataType === 'VideoTitle')?.dataValue as string;
         this.channelId = DDBRecords.find((r) => r.dataType === 'ChannelID')?.dataValue as string;
         this.publishedAt = DDBRecords.find((r) => r.dataType === 'PublishedAt')?.dataValue as string;
@@ -24,16 +26,19 @@ export class Video {
         if (DDBRecords.find((r) => r.dataType === 'ScheduledStartTime') !== undefined)
             this.scheduledStartTime = DDBRecords.find((r) => r.dataType === 'ScheduledStartTime')?.dataValue;
         if (DDBRecords.some((r) => r.dataType.startsWith('Tag:'))) {
-            const targetRecords = DDBRecords.filter((r) => r.dataType.startsWith('Tag:')).map(r=>r.dataValue?.replace('Tag:', '')) as string[];
+            const targetRecords = DDBRecords.filter((r) => r.dataType.startsWith('Tag:')).map((r) =>
+                r.dataValue?.replace('Tag:', '')
+            ) as string[];
             this.tags = targetRecords;
+        } else {
+            this.tags = [];
         }
     }
     public static async init(videoId: string): Promise<Video | undefined> {
-        console.log(`videoId: ${videoId}`);
-        const DDBRecords: DDBRecord[] | undefined = await InfrastructureDynamoDB.getVideoByVideoId(videoId);
+        const DDBRecords: DDBRecord[] | undefined = await InfrastructureDynamoDB.getRecordById(videoId);
         if (DDBRecords === undefined) return;
         if (DDBRecords.length === 0) return;
-        return new Video(DDBRecords);
+        return new Video(videoId, DDBRecords);
     }
 
     public static async isExistVideoId(videoId: string): Promise<boolean> {
@@ -44,7 +49,7 @@ export class Video {
 
 export class Tag {
     readonly tag: string;
-    readonly videoId: string
+    readonly videoId: string;
 
     constructor(tagSource: { videoId: string; tag: string }) {
         // e.g. Tag:startTIme:171
